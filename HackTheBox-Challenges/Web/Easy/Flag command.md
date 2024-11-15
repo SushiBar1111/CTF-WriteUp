@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/d5d1e944-d0c2-400b-8997-eb9872baa4e3)# CHALLENGE DESCRIPTION
+# CHALLENGE DESCRIPTION
 Embark on the "Dimensional Escape Quest" where you wake up in a mysterious forest maze that's not quite of this world. Navigate singing squirrels, mischievous nymphs, and grumpy wizards in a whimsical labyrinth that may lead to otherworldly surprises. Will you conquer the enchanted maze or find yourself lost in a different dimension of magical challenges? The journey unfolds in this mystical escape!
 
 First, I entered the web using the provided IP and port. Upon entering, The web showed me this:
