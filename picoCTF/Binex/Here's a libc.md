@@ -71,7 +71,7 @@ Note: Saya ingin jujur ko, di step yang akan dijelaskan selanjutnya, saya mengik
 
 Selanjutnya, setelah mengetahui offset, saya mencari address dari fungsi-fungsi yang ada di libc. Tujuan akhir alamat yang ingin diambil adalah alamat fungsi system. Selain fungsi, string /bin/sh juga saya cari untuk menjalankan shell di remote server.
 
-Saya dengan bantuan ChatGPT membuat script untuk eksploitasi.
+Saya dengan bantuan ChatGPT membuat script untuk eksploitasi (Penjelasan script ada di bawah setelah script).
 
 ```python
 from pwn import *
