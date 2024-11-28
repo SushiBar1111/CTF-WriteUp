@@ -44,7 +44,8 @@ Selanjutnya saya mencoba untuk menjalankan di gdb dengan cara yang sama dengan f
 
 Karena saya skill issue dan bingung kenapa saat saya menggunakan gdb gef tidak berubah juga rip nya (mungkin payload nya salah atau kurang panjang) dan tidak menemukan offset, saya mencari write up di Youtube dan meminta bantuan ChatGPT. Berdasarkan GPT dan video di Youtube, saya akhirnya menggunakan pwntools cyclic untuk menemukan offset dari buffer overflow yang ingin dilakukan. Berikut code nya:
 
-```from pwn import *
+```python
+from pwn import *
 
 binary = './vuln'
 elf = ELF(binary)
@@ -75,7 +76,7 @@ Selanjutnya, setelah mengetahui offset, saya mencari address dari fungsi-fungsi 
 
 Saya dengan bantuan ChatGPT membuat script untuk eksploitasi.
 
-```
+```python
 from pwn import *
 
 # Konfigurasi Binary dan Libc
