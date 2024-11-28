@@ -7,6 +7,7 @@ Step pertama yang saya coba adalah dengan menjalankan program dengan connect ke 
 </div>
 </br>
 
+
 Dari foto di atas, saya mengetahui bahwa program ini merubah input text yang dimasukkan oleh user menjadi uppercase di huruf yang ganjil dan lowercase di huruf yang genap.
 
 Lalu, saya mencoba untuk membuka program dengan Ghidra. Pada fungsi **main**, saya mengetahui bahwa dia memanggil fungsi **do_stuff()** yang disimpan dalam do while.
@@ -16,12 +17,14 @@ Lalu, saya mencoba untuk membuka program dengan Ghidra. Pada fungsi **main**, sa
 </div>
 </br>
 
+
 Berikut adalah fungsi **do_stuff()**:
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/b38a0f05-93f1-4229-a819-50d661c9cafd">
 </div>
 </br>
+
 
 Berdasarkan decompiled code fungsi **do_stuff()**, ada kemungkinan buffer overflow pada fungsi scanf pertama yang ini adalah input dari user dengan buffer 112 dari local_88. Lalu, pada for loop, huruf yang di convert_case hanya sampai < 100.
 
@@ -32,6 +35,7 @@ Saat saya mencoba input string random untuk mencoba buffer overflow, terjadi seg
 </div>
 </br>
 
+
 Selanjutnya saya mencoba untuk menjalankan di gdb dengan cara yang sama dengan foto di atas. Awalnya saya bingung karena sudah lebih banyak dari buffer (112) tapi nilai di rip belum berubah.
 
 <div align="center">
@@ -39,7 +43,9 @@ Selanjutnya saya mencoba untuk menjalankan di gdb dengan cara yang sama dengan f
 </div>
 </br>
 
+
 Karena saya skill issue dan bingung kenapa saat saya menggunakan **gdb gef** tidak berubah juga rip nya (mungkin payload nya salah atau kurang panjang) dan tidak menemukan offset, saya mencari write up di Youtube dan meminta bantuan ChatGPT. Berdasarkan GPT dan video di Youtube, saya akhirnya menggunakan **pwntools cyclic** untuk menemukan offset dari buffer overflow yang ingin dilakukan. Berikut code nya:
+
 
 ```python
 from pwn import *
@@ -67,13 +73,14 @@ Saya menjalankan scriptnya di kali linux karena di windows ternyata error dan ha
 </div>
 </br>
 
-Note 1: Saya ingin jujur ko, di step yang akan dijelaskan selanjutnya, saya mengikuti bantuan ChatGPT terutama dalam pembuatan script.
+**Note 1**: Saya ingin jujur ko, di step yang akan dijelaskan selanjutnya, saya mengikuti bantuan ChatGPT terutama dalam pembuatan script.
 
-Note 2: Script yang saya buat dengan bantuan GPT, saat dijalankan selalu mengalami error. Tetapi, di bawah akan saya jelaskan ide dari script yang saya buat. Maaf, ko.
+**Note 2:** Script yang saya buat dengan bantuan GPT, saat dijalankan selalu mengalami error. Tetapi, di bawah akan saya jelaskan ide dari script yang saya buat. Maaf, ko.
 
 Selanjutnya, setelah mengetahui offset, saya mencari address dari fungsi-fungsi yang ada di libc. Tujuan akhir alamat yang ingin diambil adalah alamat fungsi **system**. Selain fungsi, string **/bin/sh** juga saya cari untuk menjalankan shell di remote server.
 
 Selanjutnya, saya dengan bantuan ChatGPT membuat script untuk eksploitasinya. Pertama, saya membuat fungsi `leak` yang berfungsi untuk nge-leak address dari fungsi yang ada di libc dengan ROP. Fungsi ini akan mengembalikan alamat yang di-leak.
+
 
 ```python
 def leak(address):
@@ -93,9 +100,11 @@ def leak(address):
     return leaked_data.ljust(8, b'\x00')  
 ```
 
+
 Secara garis besar, fungsi di atas bekerja dengan membuat ROP chain dengan berisi fungsi `puts` pada plt dan address `main` lalu payload dikirim dan server akan mengembalikan address `puts` dari libc.
 
 Selanjutnya, saya membuat fungsi `dynelf_exploit` untuk mendapatkan alamat fungsi `system` dan string `/bin/bash`.
+
 
 ```python
 def dynelf_exploit():
@@ -108,9 +117,11 @@ def dynelf_exploit():
     return system_addr, bin_sh_addr
 ```
 
+
 Fungsi di atas akan menggunakan DynELF untuk memanggil fungsi leak dengan binary ELF dari binary yang didapat dari soal. Setelah mendapatkan address dari fungsi `leak`, dicari address dari `system` dan `/bin/sh`. Lalu, fungsi ini akan me-return kedua address tersebut.
 
 Pada fungsi `exploit` ini, saya mulai eksploitasi. 
+
 
 ```python
 def exploit():
@@ -134,6 +145,7 @@ Tetapi, dari code ini, masih terjadi error yang saya juga bingung solve nya baga
   <img src="https://github.com/user-attachments/assets/71c5da90-7308-41b4-8fc2-77edc1309386">
 </div>
 </br>
+
 
 Error ini terjadi ketika script sudah mendapatkan beberapa address, lalu terjadi error ini. Mohon maaf ko, saya sudah berusaha. Jika saya ada ide untuk solve ini, saya akan edit write up ini.
 
