@@ -77,7 +77,7 @@ Saya menjalankan scriptnya di kali linux karena di windows ternyata error dan ha
 
 **Note 2:** Script yang saya buat dengan bantuan GPT, saat dijalankan selalu mengalami error. Tetapi, di bawah akan saya jelaskan ide dari script yang saya buat. Maaf, ko.
 
-Selanjutnya, setelah mengetahui offset, saya mencari address dari fungsi-fungsi yang ada di libc. Tujuan akhir alamat yang ingin diambil adalah alamat fungsi **system**. Selain fungsi, string **/bin/sh** juga saya cari untuk menjalankan shell di remote server.
+Selanjutnya, setelah mengetahui offset, saya mencari address dari fungsi-fungsi yang ada di libc. Tujuan akhir alamat yang ingin diambil adalah alamat fungsi `system`. Selain fungsi, string `/bin/sh` juga saya cari untuk menjalankan shell di remote server.
 
 Selanjutnya, saya dengan bantuan ChatGPT membuat script untuk eksploitasinya. Pertama, saya membuat fungsi `leak` yang berfungsi untuk nge-leak address dari fungsi yang ada di libc dengan ROP. Fungsi ini akan mengembalikan alamat yang di-leak.
 
