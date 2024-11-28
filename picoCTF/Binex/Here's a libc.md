@@ -9,21 +9,21 @@ Step pertama yang saya coba adalah dengan menjalankan program dengan connect ke 
 
 Dari foto di atas, saya mengetahui bahwa program ini merubah input text yang dimasukkan oleh user menjadi uppercase di huruf yang ganjil dan lowercase di huruf yang genap.
 
-Lalu, saya mencoba untuk membuka program dengan Ghidra. Pada fungsi main, saya mengetahui bahwa dia memanggil fungsi do_stuff() yang disimpan dalam do while.
+Lalu, saya mencoba untuk membuka program dengan Ghidra. Pada fungsi **main**, saya mengetahui bahwa dia memanggil fungsi **do_stuff()** yang disimpan dalam do while.
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/95b39820-4de7-47ac-b831-de0a515656be">
 </div>
 </br>
 
-Berikut adalah fungsi do_stuff():
+Berikut adalah fungsi **do_stuff()**:
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/b38a0f05-93f1-4229-a819-50d661c9cafd">
 </div>
 </br>
 
-Berdasarkan decompiled code fungsi do_stuff(), ada kemungkinan buffer overflow pada fungsi scanf pertama yang ini adalah input dari user dengan buffer 112 dari local_88. Lalu, pada for loop, huruf yang di convert_case hanya sampai < 100.
+Berdasarkan decompiled code fungsi **do_stuff()**, ada kemungkinan buffer overflow pada fungsi scanf pertama yang ini adalah input dari user dengan buffer 112 dari local_88. Lalu, pada for loop, huruf yang di convert_case hanya sampai < 100.
 
 Saat saya mencoba input string random untuk mencoba buffer overflow, terjadi segmentation fault.
 
@@ -39,7 +39,7 @@ Selanjutnya saya mencoba untuk menjalankan di gdb dengan cara yang sama dengan f
 </div>
 </br>
 
-Karena saya skill issue dan bingung kenapa saat saya menggunakan gdb gef tidak berubah juga rip nya (mungkin payload nya salah atau kurang panjang) dan tidak menemukan offset, saya mencari write up di Youtube dan meminta bantuan ChatGPT. Berdasarkan GPT dan video di Youtube, saya akhirnya menggunakan pwntools cyclic untuk menemukan offset dari buffer overflow yang ingin dilakukan. Berikut code nya:
+Karena saya skill issue dan bingung kenapa saat saya menggunakan **gdb gef** tidak berubah juga rip nya (mungkin payload nya salah atau kurang panjang) dan tidak menemukan offset, saya mencari write up di Youtube dan meminta bantuan ChatGPT. Berdasarkan GPT dan video di Youtube, saya akhirnya menggunakan **pwntools cyclic** untuk menemukan offset dari buffer overflow yang ingin dilakukan. Berikut code nya:
 
 ```python
 from pwn import *
