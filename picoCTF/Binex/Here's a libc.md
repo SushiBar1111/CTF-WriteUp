@@ -1,8 +1,5 @@
 Write Up Here a Libc
 
-Nama: Fachry Altair Gantari Amaludin
-NIM: 2602109366
-
 Step pertama yang saya coba adalah dengan menjalankan program dengan connect ke remote server yang disediakan. 
 
 <div align="center">
